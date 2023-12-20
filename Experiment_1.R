@@ -63,6 +63,24 @@ ggplot(desiccation_clean, aes(x=avg_percent, y=delta_osmo))+ geom_point(aes(colo
   theme_classic(base_size = 20) + 
   xlab("Percent Melanization") + ylab("Osmolality Change")
 
+ggplot(desiccation_clean, aes(x=before_mass, y=delta_osmo))+ geom_point(aes(color=Treatment))+
+  geom_smooth(method=lm)+
+  scale_color_manual(values=treatment_colors, labels=treatment_labels) +
+  theme_classic(base_size = 20) + 
+  xlab("Body Mass") + ylab("Osmolality Change")
+
+#Body size
+ggplot(desiccation_clean, aes(x=before_mass, y=avg_percent))+ geom_point(aes(color=Treatment))+
+  geom_smooth(method=lm, aes(color=Treatment))+
+  scale_color_manual(values=treatment_colors, labels=treatment_labels) +
+  theme_classic(base_size = 20) + 
+  xlab("Body Mass") + ylab("Melanin")
+
+ggplot(desiccation_clean, aes(x=before_mass, y=percent_mass_change))+ geom_point(aes(color=Treatment))+
+  geom_smooth(method=lm)+
+  scale_color_manual(values=treatment_colors, labels=treatment_labels) +
+  theme_classic(base_size = 20) + 
+  xlab("Body Mass") + ylab("Percent Change")
 
 #Summary stats
 desiccation_clean %>%
@@ -72,11 +90,18 @@ desiccation_clean %>%
             Change_mean = mean(percent_mass_change, na.rm = TRUE),
             Change_sd = sd(percent_mass_change, na.rm = TRUE),
             Osmo_mean = mean(delta_osmo, na.rm = TRUE),
-            Osmo_sd = sd(delta_osmo, na.rm = TRUE)) %>%
+            Osmo_sd = sd(delta_osmo, na.rm = TRUE),
+            Mass_mean = mean(before_mass, na.rm = TRUE),
+            Mass_sd = sd(before_mass, na.rm = TRUE)) %>%
   as.data.frame
 
 #Stats
 t.test(avg_percent~ Treatment, data=desiccation_clean)
+
+t.test(before_mass ~ Treatment, data=desiccation_clean)
+
+melanin_mass <- lm(avg_percent ~ before_mass, data=desiccation_clean)
+summary(melanin_mass)
 
 #percent mass change
 mass_cat<- lm(log_mass_change ~ Treatment + before_mass, data=desiccation_clean)
@@ -85,12 +110,33 @@ summary(mass_cat)
 mass_cont <- lm(log_mass_change ~ avg_percent + before_mass, data=desiccation_clean)
 summary(mass_cont)
 
+
 #osmolality change
 osmo_cat<- lm(delta_osmo ~ Treatment + before_mass, data=desiccation_clean)
 summary(osmo_cat)
 
 osmo_cont <- lm(delta_osmo ~ avg_percent + before_mass, data=desiccation_clean)
 summary(osmo_cont)
+
+mass_osmo <- lm(delta_osmo ~ before_mass, data=desiccation_clean)
+summary(mass_osmo)
+
+osmo <- lm(log_mass_change ~ delta_osmo, data=desiccation_clean)
+summary(osmo)
+
+#split up data set for osmolality
+osmo_crowded <- desiccation_clean %>% 
+  filter(Treatment == "C" & delta_osmo != 0)
+
+osmo_solo <- desiccation_clean %>% 
+  filter(Treatment == "S" & delta_osmo != 0)
+
+t.test(osmo_crowded$delta_osmo, mu = 0, alternative = "two.sided")
+#p=0.063
+
+t.test(osmo_solo$delta_osmo, mu = 0, alternative = "two.sided")
+#p=0.907
+
 
 
 
